@@ -1,86 +1,102 @@
 import streamlit as st
 import pandas as pd
 from graphviz import Digraph
+import users
 
 st.set_page_config(page_title="Dashboard Kepegawaian PLTA", layout="wide")
 
-st.title("📊 Dashboard Kepegawaian Unit PLTA")
+# LOGIN
+if "login" not in st.session_state:
+    st.session_state.login = False
 
-menu = st.sidebar.selectbox(
-    "Menu",
-    ["Dashboard", "Data Pegawai", "Struktur Organisasi", "Profil Pegawai"]
-)
+if not st.session_state.login:
 
-# Load Data
-try:
-    df = pd.read_excel("data_pegawai.xlsx")
-except:
-    st.warning("File data_pegawai.xlsx belum tersedia")
-    df = pd.DataFrame(columns=["Nama","Jabatan","Unit","Status"])
+    st.title("Login Dashboard Kepegawaian")
 
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
 
-# DASHBOARD
-if menu == "Dashboard":
+    if st.button("Login"):
+        if username in users.users and users.users[username] == password:
+            st.session_state.login = True
+            st.success("Login berhasil")
+        else:
+            st.error("Username atau password salah")
 
-    st.subheader("Statistik Pegawai")
+else:
 
-    col1,col2,col3 = st.columns(3)
+    st.title("📊 Dashboard Kepegawaian Unit PLTA")
 
-    col1.metric("Jumlah Pegawai", len(df))
-    col2.metric("Pegawai Tetap", len(df[df["Status"]=="Tetap"]))
-    col3.metric("Pegawai Kontrak", len(df[df["Status"]=="Kontrak"]))
+    menu = st.sidebar.selectbox(
+        "Menu",
+        ["Dashboard", "Data Pegawai", "Struktur Organisasi", "Profil Pegawai"]
+    )
 
+    # LOAD DATA
+    try:
+        df = pd.read_excel("data_pegawai.xlsx")
+    except:
+        df = pd.DataFrame(columns=["Nama","Jabatan","Unit","Status"])
 
-# DATA PEGAWAI
-elif menu == "Data Pegawai":
+    # DASHBOARD
+    if menu == "Dashboard":
 
-    st.subheader("Data Nominatif Pegawai")
+        st.subheader("Statistik Pegawai")
 
-    st.dataframe(df, use_container_width=True)
+        col1,col2,col3 = st.columns(3)
 
-    uploaded_file = st.file_uploader("Upload Data Excel")
+        col1.metric("Jumlah Pegawai", len(df))
+        col2.metric("Pegawai Tetap", len(df[df["Status"]=="Tetap"]))
+        col3.metric("Pegawai Kontrak", len(df[df["Status"]=="Kontrak"]))
 
-    if uploaded_file:
-        df = pd.read_excel(uploaded_file)
-        st.success("Data berhasil diupload")
-        st.dataframe(df)
+    # DATA PEGAWAI
+    elif menu == "Data Pegawai":
 
+        st.subheader("Data Nominatif Pegawai")
 
-# STRUKTUR ORGANISASI
-elif menu == "Struktur Organisasi":
+        st.dataframe(df, use_container_width=True)
 
-    st.subheader("Diagram Struktur Organisasi")
+        file = st.file_uploader("Upload Data Excel")
 
-    dot = Digraph()
+        if file:
+            df = pd.read_excel(file)
+            st.success("Data berhasil diupload")
+            st.dataframe(df)
 
-    dot.node('A', 'Manager Unit')
-    dot.node('B', 'Supervisor Operasi')
-    dot.node('C', 'Supervisor Pemeliharaan')
-    dot.node('D', 'Supervisor Administrasi')
-    dot.node('E', 'Operator')
-    dot.node('F', 'Teknisi')
-    dot.node('G', 'Staff Keuangan')
-    dot.node('H', 'Staff SDM')
+    # STRUKTUR ORGANISASI
+    elif menu == "Struktur Organisasi":
 
-    dot.edge('A','B')
-    dot.edge('A','C')
-    dot.edge('A','D')
-    dot.edge('B','E')
-    dot.edge('C','F')
-    dot.edge('D','G')
-    dot.edge('D','H')
+        st.subheader("Diagram Struktur Organisasi")
 
-    st.graphviz_chart(dot)
+        dot = Digraph()
 
+        dot.node('A', 'Manager Unit')
+        dot.node('B', 'Supervisor Operasi')
+        dot.node('C', 'Supervisor Pemeliharaan')
+        dot.node('D', 'Supervisor Administrasi')
+        dot.node('E', 'Operator')
+        dot.node('F', 'Teknisi')
+        dot.node('G', 'Staff Keuangan')
+        dot.node('H', 'Staff SDM')
 
-# PROFIL PEGAWAI
-elif menu == "Profil Pegawai":
+        dot.edge('A','B')
+        dot.edge('A','C')
+        dot.edge('A','D')
+        dot.edge('B','E')
+        dot.edge('C','F')
+        dot.edge('D','G')
+        dot.edge('D','H')
 
-    st.subheader("Profil Pegawai")
+        st.graphviz_chart(dot)
 
-    nama = st.selectbox("Pilih Nama Pegawai", df["Nama"])
+    # PROFIL PEGAWAI
+    elif menu == "Profil Pegawai":
 
-    profil = df[df["Nama"] == nama]
+        st.subheader("Profil Pegawai")
 
-    st.write("### Informasi Pegawai")
-    st.table(profil)
+        nama = st.selectbox("Pilih Pegawai", df["Nama"])
+
+        profil = df[df["Nama"] == nama]
+
+        st.write("### Informasi Pegawai")
+        st.table(profil)
