@@ -2,70 +2,85 @@ import streamlit as st
 import pandas as pd
 from graphviz import Digraph
 
-st.set_page_config(page_title="Dashboard Struktur Organisasi PLTA", layout="wide")
+st.set_page_config(page_title="Dashboard Kepegawaian PLTA", layout="wide")
 
-st.title("📊 Dashboard Struktur Organisasi Unit PLTA")
+st.title("📊 Dashboard Kepegawaian Unit PLTA")
+
+menu = st.sidebar.selectbox(
+    "Menu",
+    ["Dashboard", "Data Pegawai", "Struktur Organisasi", "Profil Pegawai"]
+)
+
+# Load Data
+try:
+    df = pd.read_excel("data_pegawai.xlsx")
+except:
+    st.warning("File data_pegawai.xlsx belum tersedia")
+    df = pd.DataFrame(columns=["Nama","Jabatan","Unit","Status"])
+
+
+# DASHBOARD
+if menu == "Dashboard":
+
+    st.subheader("Statistik Pegawai")
+
+    col1,col2,col3 = st.columns(3)
+
+    col1.metric("Jumlah Pegawai", len(df))
+    col2.metric("Pegawai Tetap", len(df[df["Status"]=="Tetap"]))
+    col3.metric("Pegawai Kontrak", len(df[df["Status"]=="Kontrak"]))
+
 
 # DATA PEGAWAI
-data = {
-    "Jabatan": [
-        "Manager Unit",
-        "Supervisor Operasi",
-        "Supervisor Pemeliharaan",
-        "Supervisor Administrasi",
-        "Operator PLTA",
-        "Teknisi Pemeliharaan",
-        "Staff Keuangan",
-        "Staff SDM"
-    ],
-    "Nama": [
-        "Budi Santoso",
-        "Andi Wijaya",
-        "Rudi Hartono",
-        "Siti Aminah",
-        "Dedi Saputra",
-        "Agus Pratama",
-        "Rina Marlina",
-        "Tono Prasetyo"
-    ]
-}
+elif menu == "Data Pegawai":
 
-df = pd.DataFrame(data)
+    st.subheader("Data Nominatif Pegawai")
 
-st.subheader("Data Pegawai")
-st.dataframe(df, use_container_width=True)
+    st.dataframe(df, use_container_width=True)
 
-st.subheader("Diagram Struktur Organisasi")
+    uploaded_file = st.file_uploader("Upload Data Excel")
 
-# Membuat diagram
-dot = Digraph()
+    if uploaded_file:
+        df = pd.read_excel(uploaded_file)
+        st.success("Data berhasil diupload")
+        st.dataframe(df)
 
-# Node jabatan
-dot.node('A', 'Manager Unit\nBudi Santoso')
-dot.node('B', 'Supervisor Operasi\nAndi Wijaya')
-dot.node('C', 'Supervisor Pemeliharaan\nRudi Hartono')
-dot.node('D', 'Supervisor Administrasi\nSiti Aminah')
-dot.node('E', 'Operator PLTA\nDedi Saputra')
-dot.node('F', 'Teknisi\nAgus Pratama')
-dot.node('G', 'Staff Keuangan\nRina Marlina')
-dot.node('H', 'Staff SDM\nTono Prasetyo')
 
-# Struktur hubungan
-dot.edge('A', 'B')
-dot.edge('A', 'C')
-dot.edge('A', 'D')
-dot.edge('B', 'E')
-dot.edge('C', 'F')
-dot.edge('D', 'G')
-dot.edge('D', 'H')
+# STRUKTUR ORGANISASI
+elif menu == "Struktur Organisasi":
 
-st.graphviz_chart(dot)
+    st.subheader("Diagram Struktur Organisasi")
 
-st.subheader("Profil Pegawai")
+    dot = Digraph()
 
-pegawai = st.selectbox("Pilih Pegawai", df["Nama"])
+    dot.node('A', 'Manager Unit')
+    dot.node('B', 'Supervisor Operasi')
+    dot.node('C', 'Supervisor Pemeliharaan')
+    dot.node('D', 'Supervisor Administrasi')
+    dot.node('E', 'Operator')
+    dot.node('F', 'Teknisi')
+    dot.node('G', 'Staff Keuangan')
+    dot.node('H', 'Staff SDM')
 
-profil = df[df["Nama"] == pegawai]
+    dot.edge('A','B')
+    dot.edge('A','C')
+    dot.edge('A','D')
+    dot.edge('B','E')
+    dot.edge('C','F')
+    dot.edge('D','G')
+    dot.edge('D','H')
 
-st.write("### Informasi Pegawai")
-st.write(profil)
+    st.graphviz_chart(dot)
+
+
+# PROFIL PEGAWAI
+elif menu == "Profil Pegawai":
+
+    st.subheader("Profil Pegawai")
+
+    nama = st.selectbox("Pilih Nama Pegawai", df["Nama"])
+
+    profil = df[df["Nama"] == nama]
+
+    st.write("### Informasi Pegawai")
+    st.table(profil)
